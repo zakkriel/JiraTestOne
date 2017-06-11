@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+  <ModulePrefs
+      title="__MSG_gadget.introduction.title__"
+      directory_title="__MSG_gadget.introduction.title__"
+      description="__MSG_gadget.introduction.description__"
+      author="Atlassian"
+      author_affiliation="Atlassian" author_location="Sydney, Australia"
+      title_url="http://www.atlassian.com/"
+      screenshot="#staticResourceUrl("com.atlassian.jira.gadgets:average-age-chart-gadget", "intro-screenshot.png")"
+      thumbnail="#staticResourceUrl("com.atlassian.jira.gadgets:average-age-chart-gadget", "intro-thumb.png")">
+  <Optional feature="gadget-directory">
+  <Param name="categories">JIRA</Param>
+  </Optional>
+  <Require feature="dynamic-height" />
+  <Require feature="settitle" />
+  #supportedLocales("gadget.common,gadget.introduction")
+  </ModulePrefs>
+  <Content type="html">
+  <![CDATA[
+        #requireResource("com.atlassian.jira.gadgets:common")
+        #includeResources()
+        <div id="intro-content"><div class="fullyCentered loading"></div></div>
+        <script type="text/javascript">
+            jQuery.namespace("jira.app.intro");
+            jira.app.intro = function(){
+                var response = function(){
+                    var resize = function(){gadgets.window.adjustHeight();};
+
+                    return function(response){
+                        if (response.rc != 200){
+                            AJS.log("Error on server call '__ATLASSIAN_BASE_URL__/rest/gadget/1.0/intro'.  Return code: " + response.rc);
+                            var fragment = response.text.match(/<body[^>]*>([\S\s]*)<\/body[^>]*>/);
+                            if (fragment && fragment.length > 0) {
+                                jQuery("body").html("<div style=\"padding:0 20px\">" + fragment[1] + "</div>");
+                                resize();
+                            }
+                            return;
+                        }
+                        if (response.data && response.data.html){
+                            jQuery("#intro-content").removeClass("loading").html(response.data.html);
+                        }
+                        else {
+                            jQuery("#intro-content").removeClass("loading").html("__MSG_gadget.introduction.welcome__");
+                        }
+                        resize();
+                    };
+                }();
+
+                var setTitle = function(){
+                    var isLocal = function(){return window.location.href.indexOf("__ATLASSIAN_BASE_URL__/plugins/servlet/gadgets/ifr") == 0;};
+                    var instanceNameResponse = function(response){
+                        if (response.data && response.data.instanceName){
+                            gadgets.window.setTitle(response.data.instanceName + ": __MSG_gadget.introduction.title__");
+                        }
+                    };
+                    return function(){
+                        if (!isLocal()){
+                            var params = {};
+                            params[gadgets.io.RequestParameters.CONTENT_TYPE] = gadgets.io.ContentType.JSON;
+                            params[gadgets.io.RequestParameters.METHOD] = gadgets.io.MethodType.GET;
+                            gadgets.io.makeRequest("__ATLASSIAN_BASE_URL__/rest/gadget/1.0/instanceName", instanceNameResponse, params);
+                        }
+                    };
+                }();
+                return function(){
+                    setTitle();
+                    var params = {};
+                    params[gadgets.io.RequestParameters.CONTENT_TYPE] = gadgets.io.ContentType.JSON;
+                    params[gadgets.io.RequestParameters.METHOD] = gadgets.io.MethodType.GET;
+                    gadgets.io.makeRequest("__ATLASSIAN_BASE_URL__/rest/gadget/1.0/intro", response, params);
+
+                };
+            }();
+            gadgets.util.registerOnLoadHandler(jira.app.intro);
+        </script>
+
+
+  ]]>
+  </Content>
+</Module>
